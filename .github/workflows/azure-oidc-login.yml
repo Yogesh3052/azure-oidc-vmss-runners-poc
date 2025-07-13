@@ -1,7 +1,11 @@
 name: Azure OIDC Login Test
 
 on:
-  workflow_dispatch:  # Allows manual trigger from the GitHub UI
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   azure-login-test:
