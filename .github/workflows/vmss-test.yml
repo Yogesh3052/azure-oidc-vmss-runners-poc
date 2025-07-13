@@ -1,0 +1,21 @@
+name: VMSS Self-Hosted Runner Test
+
+on:
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  test-vmss:
+    name: Run on VMSS Self-Hosted Runner
+    runs-on: [self-hosted, vmss, linux]
+    steps:
+      - name: Check runner identity
+        run: |
+          echo "Running on VM: $(hostname)"
+          uname -a
+          whoami
+      - name: Simulate some activity
+        run: |
+          echo "Logging sample session..."
+          date
+          sleep 10
+          echo "Done"
