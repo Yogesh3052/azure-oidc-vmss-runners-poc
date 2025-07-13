@@ -1,0 +1,28 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+runcmd:
+  # 1. Install dependencies
+  - apt-get update && apt-get install -y curl jq git azure-cli auditd
+
+  # 2. Login to Azure using UAMI
+  - az login --identity --client-id 3d05dcf4-74af-499d-9afa-6600de55713e
+
+  # 3. Fetch GitHub PAT from Azure Key Vault
+  - export PAT=$(az keyvault secret show \
+      --vault-name kv-dati-ghrunner \
+      --name github-pat \
+      --query value -o tsv)
+
+  # 4. Set up GitHub Actions runner
+  - mkdir /actions-runner && cd /actions-runner
+  - curl -o actions-runner-linux-x64.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+  - tar xzf actions-runner-linux-x64.tar.gz
+  - ./bin/installdependencies.sh
+  - ./config.sh --url https://github.com/Yogesh3052/azure-oidc-vmss-runners-poc --token $PAT --unattended --labels vmss,linux
+  - ./run.sh &
+
+  # 5. Enable Linux auditd (session logging)
+  - systemctl enable auditd
+  - systemctl start auditd
