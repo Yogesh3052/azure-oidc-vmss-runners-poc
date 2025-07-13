@@ -1,0 +1,24 @@
+name: Azure OIDC Login Test
+
+on:
+  workflow_dispatch:  # Allows manual trigger from the GitHub UI
+
+jobs:
+  azure-login-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run Azure CLI command
+        run: |
+          echo "Listing Resource Groups..."
+          az group list --output table
