@@ -1,21 +1,56 @@
-name: VMSS Self-Hosted Runner Test
+name: VMSS Runner Debug
 
 on:
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
-  test-vmss:
-    name: Run on VMSS Self-Hosted Runner
+  debug:
+    name: VMSS Diagnostics
     runs-on: [self-hosted, vmss, linux]
+
     steps:
-      - name: Check runner identity
+      - name: Print Host Info
         run: |
-          echo "Running on VM: $(hostname)"
+          echo "🏷️ Hostname: $(hostname)"
+          echo "👤 Whoami: $(whoami)"
+          echo "🕒 Date: $(date)"
+          echo "📂 Current Dir: $(pwd)"
           uname -a
-          whoami
-      - name: Simulate some activity
+
+      - name: Print Environment Variables
         run: |
-          echo "Logging sample session..."
-          date
-          sleep 10
-          echo "Done"
+          echo "🌐 Environment:"
+          env | sort
+
+      - name: Show Network Info
+        run: |
+          echo "🔗 Network interfaces:"
+          ip a
+          echo "🧭 DNS resolution:"
+          nslookup github.com || true
+
+      - name: Disk & Memory
+        run: |
+          echo "💾 Disk:"
+          df -h
+          echo "🧠 Memory:"
+          free -h
+
+      - name: List Running Processes (Top 20)
+        run: |
+          echo "🔍 Top 20 Processes:"
+          ps -eo pid,ppid,user,cmd,%mem,%cpu --sort=-%cpu | head -n 20
+
+      - name: Check for Azure CLI
+        run: |
+          echo "🔧 Checking az CLI"
+          if command -v az &> /dev/null; then
+            echo "✅ az CLI is installed"
+            az version
+          else
+            echo "❌ az CLI not found"
+          fi
+
+      - name: Final Log
+        run: echo "✅ Runner seems to be functional. Review logs above."
+
