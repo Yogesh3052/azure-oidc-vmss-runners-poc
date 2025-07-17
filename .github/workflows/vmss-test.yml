@@ -1,56 +1,28 @@
-name: VMSS Runner Debug
+name: Self-Hosted Runner Debug
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
-  debug:
-    name: VMSS Diagnostics
-    runs-on: [self-hosted, vmss, linux]
-
+  debug-runner:
+    runs-on: self-hosted
     steps:
-      - name: Print Host Info
+      - name: 🖥️ Print basic runner info
         run: |
-          echo "🏷️ Hostname: $(hostname)"
-          echo "👤 Whoami: $(whoami)"
-          echo "🕒 Date: $(date)"
-          echo "📂 Current Dir: $(pwd)"
-          uname -a
-
-      - name: Print Environment Variables
-        run: |
-          echo "🌐 Environment:"
-          env | sort
-
-      - name: Show Network Info
-        run: |
-          echo "🔗 Network interfaces:"
-          ip a
-          echo "🧭 DNS resolution:"
-          nslookup github.com || true
-
-      - name: Disk & Memory
-        run: |
-          echo "💾 Disk:"
+          echo "✅ Self-hosted runner is up!"
+          echo "🏷️ Runner name: $RUNNER_NAME"
+          echo "📂 Runner workspace: $RUNNER_WORKSPACE"
+          echo "💻 OS: $(uname -a)"
+          echo "👤 User: $(whoami)"
+          echo "📍 Current directory: $(pwd)"
+          echo "📦 Disk usage:"
           df -h
-          echo "🧠 Memory:"
-          free -h
 
-      - name: List Running Processes (Top 20)
-        run: |
-          echo "🔍 Top 20 Processes:"
-          ps -eo pid,ppid,user,cmd,%mem,%cpu --sort=-%cpu | head -n 20
+      - name: 🔍 Environment variables
+        run: printenv | sort
 
-      - name: Check for Azure CLI
-        run: |
-          echo "🔧 Checking az CLI"
-          if command -v az &> /dev/null; then
-            echo "✅ az CLI is installed"
-            az version
-          else
-            echo "❌ az CLI not found"
-          fi
-
-      - name: Final Log
-        run: echo "✅ Runner seems to be functional. Review logs above."
-
+      - name: 📁 List repo contents
+        uses: actions/checkout@v4
+      - run: |
+          echo "📁 Files in repo:"
+          ls -la
