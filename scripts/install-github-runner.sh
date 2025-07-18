@@ -15,6 +15,13 @@ echo "[INFO] Installing dependencies..."
 sudo apt-get update
 sudo apt-get install -y curl jq git auditd
 
+echo "[INFO] Installing Azure CLI..."
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+echo "[INFO] Azure CLI installed. Checking version:"
+az version
+
+
 #-----------------------------#
 # Fetch GitHub PAT securely from Key Vault
 #-----------------------------#
