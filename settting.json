@@ -1,0 +1,7 @@
+
+{
+  "fileUris": [
+    "https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/scripts/install-github-runner.sh"
+  ],
+  "commandToExecute": "bash install-github-runner.sh"
+}

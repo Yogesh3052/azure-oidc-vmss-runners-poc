@@ -1,0 +1,15 @@
+{
+  "clientId": "3d05dcf4-74af-499d-9afa-6600de55713e",
+  "id": "/subscriptions/858ff88f-f4eb-4c74-a426-ede605a16609/resourcegroups/github-runner-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/github-vmss-identity",
+  "location": "centralindia",
+  "name": "github-vmss-identity",
+  "principalId": "cb8ef76c-7d17-4b7a-87aa-3ce837b251cf",
+  "resourceGroup": "github-runner-rg",
+  "systemData": null,
+  "tags": {},
+  "tenantId": "29445a0c-1e49-466b-ae33-10695b703c93",
+  "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+}
+
+
+KEYVAULT_ID= /subscriptions/858ff88f-f4eb-4c74-a426-ede605a16609/resourceGroups/github-runner-rg/providers/Microsoft.KeyVault/vaults/kv-dati-ghrunner

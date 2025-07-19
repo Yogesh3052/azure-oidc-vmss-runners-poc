@@ -1,81 +1,77 @@
 #!/bin/bash
+# Force all output to a known log file immediately
+exec > >(tee -a /var/log/runner-install.log) 2>&1
+echo "==== Starting installation at $(date) ===="
 
-set -e
+# 1. First verify basic system access
+echo "Checking working directory: $(pwd)"
+echo "Contents of current directory:"
+ls -la
+echo ""
 
-#-----------------------------#
-# Configuration Variables
-#-----------------------------#
-VAULT_NAME="kv-dati-ghrunner"
-SECRET_NAME="github-pat"
-GITHUB_REPO="Yogesh3052/azure-oidc-vmss-runners-poc"
-RUNNER_DIR="/opt/actions-runner"
-RUNNER_VERSION="2.311.0"
+# 2. Install minimal dependencies first
+echo "Installing absolute minimum dependencies..."
+sudo apt-get update -y
+sudo apt-get install -y curl jq
 
-echo "[INFO] Installing dependencies..."
-sudo apt-get update
-sudo apt-get install -y curl jq git auditd
+# 3. Verify network connectivity
+echo "Testing GitHub connectivity..."
+curl -v https://github.com > /dev/null || {
+    echo "ERROR: Cannot reach GitHub"
+    exit 1
+}
 
-echo "[INFO] Installing Azure CLI..."
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+# 4. Download runner
+RUNNER_VERSION="2.326.0"
+RUNNER_FILE="actions-runner-linux-x64-$RUNNER_VERSION.tar.gz"
+echo "Downloading runner $RUNNER_VERSION..."
+curl -L -o "$RUNNER_FILE" \
+  "https://github.com/actions/runner/releases/download/v2.326.0/$RUNNER_FILE" || {
+    echo "ERROR: Failed to download runner"
+    exit 1
+}
 
-echo "[INFO] Azure CLI installed. Checking version:"
-az version
+# 5. Extract
+echo "Extracting runner..."
+tar xzf "$RUNNER_FILE" || {
+    echo "ERROR: Failed to extract runner"
+    exit 1
+}
 
+# 6. Get OIDC token (using system identity)
+echo "Requesting OIDC token..."
+TOKEN_ENDPOINT="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2021-02-01&resource=api.github.com"
+TOKEN=$(curl -s -H Metadata:true "$TOKEN_ENDPOINT" | jq -r '.access_token')
 
-#-----------------------------#
-# Fetch GitHub PAT securely from Key Vault
-#-----------------------------#
-echo "[INFO] Fetching GitHub PAT from Azure Key Vault..."
-PAT=$(az keyvault secret show \
-  --vault-name "$VAULT_NAME" \
-  --name "$SECRET_NAME" \
-  --query "value" -o tsv)
-
-if [ -z "$PAT" ]; then
-  echo "[ERROR] Failed to retrieve PAT from Key Vault"
-  exit 1
+if [ -z "$TOKEN" ]; then
+    echo "ERROR: Failed to get OIDC token"
+    echo "Debug info:"
+    curl -v -H Metadata:true "$TOKEN_ENDPOINT"
+    exit 1
 fi
 
-#-----------------------------#
-# Install GitHub Actions Runner
-#-----------------------------#
-echo "[INFO] Creating runner directory..."
-sudo mkdir -p $RUNNER_DIR
-cd $RUNNER_DIR
+# 7. Configure runner
+echo "Configuring runner..."
+./config.sh --unattended \
+  --url "https://github.com/Yogesh3052/azure-oidc-vmss-runners-poc" \
+  --ephemeral \
+  --jitconfig "$TOKEN" \
+  --name "$(hostname)-runner" \
+  --labels "vmss,oidc" || {
+    echo "ERROR: Runner configuration failed"
+    exit 1
+}
 
-echo "[INFO] Downloading GitHub Actions runner v$RUNNER_VERSION..."
-curl -o actions-runner-linux-x64.tar.gz -L "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz"
-tar xzf actions-runner-linux-x64.tar.gz
-sudo ./bin/installdependencies.sh
+# 8. Install service
+echo "Installing service..."
+sudo ./svc.sh install || {
+    echo "ERROR: Service installation failed"
+    exit 1
+}
 
-echo "[INFO] Requesting registration token from GitHub API..."
-REG_TOKEN=$(curl -s -X POST \
-  -H "Authorization: token ${PAT}" \
-  https://api.github.com/repos/${GITHUB_REPO}/actions/runners/registration-token | jq -r .token)
+sudo ./svc.sh start || {
+    echo "ERROR: Service start failed"
+    exit 1
+}
 
-if [ -z "$REG_TOKEN" ]; then
-  echo "[ERROR] Failed to fetch runner registration token from GitHub API"
-  exit 1
-fi
-
-#-----------------------------#
-# Configure and Start Runner
-#-----------------------------#
-echo "[INFO] Configuring GitHub runner..."
-sudo ./config.sh --unattended \
-  --url "https://github.com/${GITHUB_REPO}" \
-  --token "$REG_TOKEN" \
-  --name "vmss-runner-$(hostname)" \
-  --labels "vmss,linux"
-
-echo "[INFO] Starting GitHub runner in background..."
-sudo ./run.sh &
-
-#-----------------------------#
-# Enable Session Logging
-#-----------------------------#
-echo "[INFO] Enabling auditd for session logging..."
-sudo systemctl enable auditd
-sudo systemctl start auditd
-
-echo "[SUCCESS] GitHub Runner setup complete with session logging."
+echo "==== Installation completed successfully at $(date) ===="
