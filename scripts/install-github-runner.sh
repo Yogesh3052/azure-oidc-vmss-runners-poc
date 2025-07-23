@@ -23,6 +23,7 @@ echo "=== Starting installation at $(date) ==="
 # 2. Install dependencies
 echo "Installing dependencies..."
 sudo apt-get update -y
+sudo apt-get install -y  jq
 sudo apt-get install -y curl tar git jq
 
 # 3. Download GitHub Runner
