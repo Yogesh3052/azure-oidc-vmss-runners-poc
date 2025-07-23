@@ -76,12 +76,23 @@ echo "Logs available at: $LOG_FILE"
 
 # Install termination listener
 echo "Setting up termination listener..."
-curl -s -o /usr/local/bin/termination-listener.sh \
-    https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/scripts/termination-listener.sh
-chmod +x /usr/local/bin/termination-listener.sh
+if ! sudo curl -sSfLo /usr/local/bin/termination-listener.sh \
+    "https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/scripts/termination-listener.sh?_=$(date +%s)"; then
+    echo "ERROR: Failed to download termination listener script" >&2
+    exit 1
+fi
 
-# Create and enable systemd service
-cat <<EOF > /etc/systemd/system/termination-listener.service
+# Verify download was successful
+if [ ! -s "/usr/local/bin/termination-listener.sh" ]; then
+    echo "ERROR: Downloaded file is empty" >&2
+    sudo rm -f /usr/local/bin/termination-listener.sh
+    exit 1
+fi
+sudo chmod 755 /usr/local/bin/termination-listener.sh
+sudo chown root:root /usr/local/bin/termination-listener.sh
+
+# Create systemd service file
+sudo tee /etc/systemd/system/termination-listener.service >/dev/null <<'EOF'
 [Unit]
 Description=GitHub Runner Termination Listener
 After=network.target
@@ -89,12 +100,16 @@ After=network.target
 [Service]
 ExecStart=/usr/local/bin/termination-listener.sh
 Restart=always
+RestartSec=10
 User=root
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable termination-listener.service
-systemctl start termination-listener.service
+# Enable and start service
+sudo systemctl daemon-reload
+sudo systemctl enable termination-listener.service
+sudo systemctl start termination-listener.service
