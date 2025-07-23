@@ -77,7 +77,7 @@ echo "Logs available at: $LOG_FILE"
 # Install termination listener
 echo "Setting up termination listener..."
 curl -s -o /usr/local/bin/termination-listener.sh \
-    https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/termination-listener.sh
+    https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/scripts/termination-listener.sh
 chmod +x /usr/local/bin/termination-listener.sh
 
 # Create and enable systemd service
