@@ -73,3 +73,28 @@ sudo ./svc.sh start
 
 echo "=== Installation complete at $(date) ==="
 echo "Logs available at: $LOG_FILE"
+
+# Install termination listener
+echo "Setting up termination listener..."
+curl -s -o /usr/local/bin/termination-listener.sh \
+    https://raw.githubusercontent.com/Yogesh3052/azure-oidc-vmss-runners-poc/main/termination-listener.sh
+chmod +x /usr/local/bin/termination-listener.sh
+
+# Create and enable systemd service
+cat <<EOF > /etc/systemd/system/termination-listener.service
+[Unit]
+Description=GitHub Runner Termination Listener
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/termination-listener.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable termination-listener.service
+systemctl start termination-listener.service
