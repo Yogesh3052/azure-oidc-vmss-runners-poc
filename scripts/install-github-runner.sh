@@ -65,7 +65,7 @@ REG_TOKEN=$(curl -s -X POST \
   | jq -r .token)
 
 # Then use the temporary token:
-./config.sh --unattended --url https://github.com/Yogesh3052/azure-oidc-vmss-runners-poc --token "$REG_TOKEN"
+./config.sh --unattended --url https://github.com/Yogesh3052/azure-oidc-vmss-runners-poc --token "$REG_TOKEN" --ephemeral
 
 # 6. Install service (without sudo)
 echo "Starting runner..."
